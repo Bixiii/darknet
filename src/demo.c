@@ -103,8 +103,9 @@ double get_wall_time()
     return (double)walltime.tv_sec + (double)walltime.tv_usec * .000001;
 }
 
-void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename, char **names, int classes,
-    int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int json_port, int dont_show, int ext_output, int letter_box_in)
+void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int cam_index, const char *filename,
+          char **names, int classes, int frame_skip, char *prefix, char *out_filename, int mjpeg_port, int json_port,
+          int dont_show, int ext_output, char *outfile, int letter_box_in)
 {
     letter_box = letter_box_in;
     in_img = det_img = show_img = NULL;
@@ -154,6 +155,15 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
         exit(0);
     }
 
+    FILE* json_file = NULL;
+    if (outfile) {
+        json_file = fopen(outfile, "wb");
+        char *tmp;
+        int now = time(NULL);
+        sprintf(tmp, "{\n \"Mediasource\":\"%s\",\n \"FPS\":\"%d\",\n \"Width\":%d,\n \"Height\":%d,\n \"Time\":\"%d-%02d-%02d %02d:%02d:%02d\",\n \"Frames\":[\n",
+                filename, 30, 416, 416, now/31556926+1970, (now%31556926)/2629743+1, (now%2629743)/86400+1, (now%86400)/3600, (now%3600)/60, now%60);
+        fwrite(tmp, sizeof(char),  strlen(tmp), json_file);
+    }
 
     flag_exit = 0;
 
@@ -221,6 +231,14 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             printf("Objects:\n\n");
 
             ++frame_id;
+            if(outfile) {
+                if(frame_id >1) {
+                    fwrite(",\n", sizeof(char), strlen(",\n"), json_file);
+                }
+                char *json_buf = detection_to_json(local_dets, local_nboxes, l.classes, demo_names, frame_id, NULL);
+                fwrite(json_buf, sizeof(char), strlen(json_buf), json_file);
+                free(json_buf);
+            }
             if (demo_json_port > 0) {
                 int timeout = 400000;
                 send_json(local_dets, local_nboxes, l.classes, demo_names, frame_id, demo_json_port, timeout);
@@ -235,6 +253,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
                 if (!dont_show) {
                     show_image_mat(show_img, "Demo");
                     int c = wait_key_cv(1);
+                    // if enter is pressed toggle between different frame skips
                     if (c == 10) {
                         if (frame_skip == 0) frame_skip = 60;
                         else if (frame_skip == 4) frame_skip = 0;
@@ -273,6 +292,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
             if (flag_exit == 1) break;
 
+            // if frameskip is > 0 show image only after delay = frameskip
             if(delay == 0){
                 show_img = det_img;
             }
@@ -283,6 +303,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
         if(delay < 0){
             delay = frame_skip;
 
+            // measure time and calcualte fps
             //double after = get_wall_time();
             //float curr = 1./(after - before);
             double after = get_time_point();    // more accurate time measurements
@@ -295,6 +316,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     if (output_video_writer) {
         release_video_writer(&output_video_writer);
         printf("output_video_writer closed. \n");
+    }
+
+    if(outfile) {
+        fwrite("\n]\n}", sizeof(char), strlen("\n]\n}"), json_file);
+        fclose(json_file);
     }
 
     // free memory
@@ -318,6 +344,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     }
     free(alphabet);
     free_network(net);
+
     //cudaProfilerStop();
 }
 #else

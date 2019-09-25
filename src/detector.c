@@ -1498,7 +1498,7 @@ void run_detector(int argc, char **argv)
             if (strlen(filename) > 0)
                 if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
         demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
-            mjpeg_port, json_port, dont_show, ext_output, letter_box);
+             mjpeg_port, json_port, dont_show, ext_output, outfile, letter_box);
 
         free_list_contents_kvp(options);
         free_list(options);

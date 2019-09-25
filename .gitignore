@@ -55,3 +55,17 @@ include/darknet/
 uselib
 uselib_track
 darknet
+
+#weights
+**/weights
+
+#results
+**/results
+predictions.jpg
+
+#clion
+**/.idea
+**/CMakeFiles
+CMakeCache.txt
+Makefile
+*.cmake

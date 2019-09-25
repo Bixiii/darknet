@@ -76,12 +76,12 @@ void binarize_input(float *input, int n, int size, float *binary)
 
 int convolutional_out_height(convolutional_layer l)
 {
-    return (l.h + 2*l.pad - l.size) / l.stride_y + 1;
+    return (l.h + 2*l.pad - l.size) / l.stride + 1;
 }
 
 int convolutional_out_width(convolutional_layer l)
 {
-    return (l.w + 2*l.pad - l.size) / l.stride_x + 1;
+    return (l.w + 2*l.pad - l.size) / l.stride + 1;
 }
 
 image get_convolutional_image(convolutional_layer l)
@@ -276,9 +276,9 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 
     //printf("\n l->dilation = %d, l->pad = %d, l->size = %d \n", l->dilation, l->pad, l->size);
 #if(CUDNN_MAJOR >= 6)
-    CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad * l->dilation, l->pad* l->dilation, l->stride_y, l->stride_x, l->dilation, l->dilation, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));    // cudnn >= 6.0
+    CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad * l->dilation, l->pad* l->dilation, l->stride, l->stride, l->dilation, l->dilation, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));    // cudnn >= 6.0
 #else
-    CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad * l->dilation, l->pad * l->dilation, l->stride_y, l->stride_x, l->dilation, l->dilation, CUDNN_CROSS_CORRELATION));    // cudnn 5.1
+    CHECK_CUDNN(cudnnSetConvolution2dDescriptor(l->convDesc, l->pad * l->dilation, l->pad * l->dilation, l->stride, l->stride, l->dilation, l->dilation, CUDNN_CROSS_CORRELATION));    // cudnn 5.1
 #endif
     int forward_algo = CUDNN_CONVOLUTION_FWD_PREFER_FASTEST;
     int backward_algo = CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST;
@@ -332,7 +332,7 @@ void cudnn_convolutional_setup(layer *l, int cudnn_preference)
 #endif
 #endif
 
-convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride_x, int stride_y, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index, int antialiasing, convolutional_layer *share_layer, int assisted_excitation)
+convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w, int c, int n, int groups, int size, int stride, int dilation, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam, int use_bin_output, int index, convolutional_layer *share_layer)
 {
     int total_batch = batch*steps;
     int i;
@@ -342,14 +342,6 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     if (xnor) groups = 1;   // disable groups for XNOR-net
     if (groups < 1) groups = 1;
 
-    const int blur_stride_x = stride_x;
-    const int blur_stride_y = stride_y;
-    l.antialiasing = antialiasing;
-    if (antialiasing) {
-        stride_x = stride_y = l.stride = l.stride_x = l.stride_y = 1; // use stride=1 in host-layer
-    }
-
-    l.assisted_excitation = assisted_excitation;
     l.share_layer = share_layer;
     l.index = index;
     l.h = h;
@@ -362,9 +354,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     l.use_bin_output = use_bin_output;
     l.batch = batch;
     l.steps = steps;
-    l.stride = stride_x;
-    l.stride_x = stride_x;
-    l.stride_y = stride_y;
+    l.stride = stride;
     l.dilation = dilation;
     l.size = size;
     l.pad = padding;
@@ -504,7 +494,7 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
 #ifdef CUDNN_HALF
             l.weights_gpu16 = cuda_make_array(NULL, l.nweights / 2 + 1);
             l.weight_updates_gpu16 = cuda_make_array(NULL, l.nweights / 2 + 1);
-#endif  // CUDNN_HALF
+#endif
             l.biases_gpu = cuda_make_array(l.biases, n);
             l.bias_updates_gpu = cuda_make_array(l.bias_updates, n);
         }
@@ -548,82 +538,29 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
             l.x_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
             l.x_norm_gpu = cuda_make_array(l.output, total_batch*out_h*out_w*n);
         }
-
-        if (l.assisted_excitation)
-        {
-            const int size = l.out_w * l.out_h * l.batch;
-            l.gt_gpu = cuda_make_array(NULL, size);
-            l.a_avg_gpu = cuda_make_array(NULL, size);
-        }
 #ifdef CUDNN
         create_convolutional_cudnn_tensors(&l);
         cudnn_convolutional_setup(&l, cudnn_fastest);
-#endif  // CUDNN
+#endif
     }
-#endif  // GPU
+#endif
     l.workspace_size = get_convolutional_workspace_size(l);
 
     //fprintf(stderr, "conv  %5d %2d x%2d /%2d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", n, size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c);
     l.bflops = (2.0 * l.nweights * l.out_h*l.out_w) / 1000000000.;
     if (l.xnor && l.use_bin_output) fprintf(stderr, "convXB");
     else if (l.xnor) fprintf(stderr, "convX ");
-    else if (l.share_layer) fprintf(stderr, "convS ");
-    else if (l.assisted_excitation) fprintf(stderr, "convAE");
     else fprintf(stderr, "conv  ");
 
-    if (groups > 1) fprintf(stderr, "%5d/%4d ", n, groups);
+    if(groups > 1) fprintf(stderr, "%5d/%4d ", n, groups);
     else           fprintf(stderr, "%5d      ", n);
 
-    if (stride_x != stride_y) fprintf(stderr, "%2dx%2d/%2dx%2d ", size, size, stride_x, stride_y);
-    else {
-        if (dilation > 1) fprintf(stderr, "%2d x%2d/%2d(%1d)", size, size, stride_x, dilation);
-        else             fprintf(stderr, "%2d x%2d/%2d   ", size, size, stride_x);
-    }
+    if(dilation > 1) fprintf(stderr, "%2d x%2d/%2d(%1d)", size, size, stride, dilation);
+    else             fprintf(stderr, "%2d x%2d/%2d   ", size, size, stride);
 
     fprintf(stderr, "%4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
 
     //fprintf(stderr, "%5d/%2d %2d x%2d /%2d(%d)%4d x%4d x%4d  -> %4d x%4d x%4d %5.3f BF\n", n, groups, size, size, stride, dilation, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
-
-    if (l.antialiasing) {
-        printf("AA:  ");
-        l.input_layer = (layer*)calloc(1, sizeof(layer));
-        const int blur_size = 3;
-        *(l.input_layer) = make_convolutional_layer(batch, steps, out_h, out_w, n, n, n, blur_size, blur_stride_x, blur_stride_y, 1, blur_size / 2, LINEAR, 0, 0, 0, 0, 0, index, 0, NULL, 0);
-        const int blur_nweights = n * blur_size * blur_size;  // (n / n) * n * blur_size * blur_size;
-        int i;
-        for (i = 0; i < blur_nweights; i += (blur_size*blur_size)) {
-            /*
-            l.input_layer->weights[i + 0] = 0;
-            l.input_layer->weights[i + 1] = 0;
-            l.input_layer->weights[i + 2] = 0;
-
-            l.input_layer->weights[i + 3] = 0;
-            l.input_layer->weights[i + 4] = 1;
-            l.input_layer->weights[i + 5] = 0;
-
-            l.input_layer->weights[i + 6] = 0;
-            l.input_layer->weights[i + 7] = 0;
-            l.input_layer->weights[i + 8] = 0;
-            */
-            l.input_layer->weights[i + 0] = 1 / 16.f;
-            l.input_layer->weights[i + 1] = 2 / 16.f;
-            l.input_layer->weights[i + 2] = 1 / 16.f;
-
-            l.input_layer->weights[i + 3] = 2 / 16.f;
-            l.input_layer->weights[i + 4] = 4 / 16.f;
-            l.input_layer->weights[i + 5] = 2 / 16.f;
-
-            l.input_layer->weights[i + 6] = 1 / 16.f;
-            l.input_layer->weights[i + 7] = 2 / 16.f;
-            l.input_layer->weights[i + 8] = 1 / 16.f;
-
-        }
-        for (i = 0; i < n; ++i) l.input_layer->biases[i] = 0;
-#ifdef GPU
-        l.input_antialiasing_gpu = cuda_make_array(NULL, l.batch*l.outputs);
-        push_convolutional_layer(*(l.input_layer));
-#endif  // GPU
-    }
 
     return l;
 }
@@ -645,7 +582,7 @@ void denormalize_convolutional_layer(convolutional_layer l)
 
 void test_convolutional_layer()
 {
-    convolutional_layer l = make_convolutional_layer(1, 1, 5, 5, 3, 2, 1, 5, 2, 2, 1, 1, LEAKY, 1, 0, 0, 0, 0, 0, 0, NULL, 0);
+    convolutional_layer l = make_convolutional_layer(1, 1, 5, 5, 3, 2, 1, 5, 2, 1, 1, LEAKY, 1, 0, 0, 0, 0, 0, NULL);
     l.batch_normalize = 1;
     float data[] = {1,1,1,1,1,
         1,1,1,1,1,
@@ -983,7 +920,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
 
             //gemm(0,0,m,n,k,1,a,k,b,n,1,c,n);
             //gemm_nn_custom(m, n, k, 1, a, k, b, n, c, n);
-            if (l.xnor && l.align_bit_weights && !state.train && l.stride_x == l.stride_y)
+            if (l.xnor && l.align_bit_weights && !state.train)
             {
                 memset(b, 0, l.bit_align*l.size*l.size*l.c * sizeof(float));
 
@@ -1115,7 +1052,7 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                         l.h, l.w,           // input size (h, w)
                         l.size, l.size,     // kernel size (h, w)
                         l.pad, l.pad,       // padding (h, w)
-                        l.stride_y, l.stride_x, // stride (h, w)
+                        l.stride, l.stride, // stride (h, w)
                         l.dilation, l.dilation, // dilation (h, w)
                         b);                 // output
 
@@ -1144,17 +1081,6 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     //wait_until_press_key_cv();
 
     if(l.assisted_excitation && state.train) assisted_excitation_forward(l, state);
-
-    if (l.antialiasing) {
-        network_state s = { 0 };
-        s.train = state.train;
-        s.workspace = state.workspace;
-        s.net = state.net;
-        s.input = l.output;
-        forward_convolutional_layer(*(l.input_layer), s);
-        //simple_copy_ongpu(l.outputs*l.batch, l.output, l.input_antialiasing);
-        memcpy(l.output, l.input_layer->output, l.input_layer->outputs * l.input_layer->batch * sizeof(float));
-    }
 }
 
 static box float_to_box_stride(float *f, int stride)
@@ -1172,17 +1098,12 @@ void assisted_excitation_forward(convolutional_layer l, network_state state)
     const int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
 
     // epoch
-    //const float epoch = (float)(*state.net.seen) / state.net.train_images_num;
+    const float epoch = (float)(*state.net.seen) / state.net.train_images_num;
 
     // calculate alpha
     //const float alpha = (1 + cos(3.141592 * iteration_num)) / (2 * state.net.max_batches);
     //const float alpha = (1 + cos(3.141592 * epoch)) / (2 * state.net.max_batches);
-    float alpha = (1 + cos(3.141592 * iteration_num / state.net.max_batches));
-
-    if (l.assisted_excitation > 1) {
-        if (iteration_num > l.assisted_excitation) alpha = 0;
-        else alpha = (1 + cos(3.141592 * iteration_num / l.assisted_excitation));
-    }
+    const float alpha = (1 + cos(3.141592 * iteration_num / state.net.max_batches)) / 2;
 
     //printf("\n epoch = %f, alpha = %f, seen = %d, max_batches = %d, train_images_num = %d \n",
     //    epoch, alpha, (*state.net.seen), state.net.max_batches, state.net.train_images_num);
@@ -1250,7 +1171,7 @@ void assisted_excitation_forward(convolutional_layer l, network_state state)
         }
     }
 
-    if(1)   // visualize ground truth
+    if(0)   // visualize ground truth
     {
 #ifdef OPENCV
         for (b = 0; b < l.batch; ++b)
@@ -1307,7 +1228,7 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
                 l.h, l.w,           // input size (h, w)
                 l.size, l.size,     // kernel size (h, w)
                 l.pad, l.pad,       // padding (h, w)
-                l.stride_y, l.stride_x, // stride (h, w)
+                l.stride, l.stride, // stride (h, w)
                 l.dilation, l.dilation, // dilation (h, w)
                 b);                 // output
 
@@ -1329,7 +1250,7 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
                     l.h, l.w,               // input size (h, w)
                     l.size, l.size,         // kernel size (h, w)
                     l.pad, l.pad,           // padding (h, w)
-                    l.stride_y, l.stride_x,     // stride (h, w)
+                    l.stride, l.stride,     // stride (h, w)
                     l.dilation, l.dilation, // dilation (h, w)
                     state.delta + (i*l.groups + j)* (l.c / l.groups)*l.h*l.w); // output (delta)
             }

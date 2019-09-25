@@ -1,0 +1,45 @@
+|||---------------------------------------|||
+                detector
+|||---------------------------------------|||
+
+    test ... for image
+    train ... train network
+    valid
+    recall
+    map ... calculate mean average precison
+    calc_anchors
+    demo ... for videos or webcams
+
+-dont_show ... dont show images or video
+-letter_box
+-check_mistakes
+-mjpeg_port ... define port for live-vide (eg. http://localhost:8090)
+-json_port ... define port where json-files containing predictiosn will be avalable
+-out_filename ... filname where anotated video/image file sould be stored
+-out ... for in test/valid/demo, writes json file with predictions
+-prefix
+-thresh ... specify detection threshold (double)
+-iou_tresh
+-hier
+-c ... cam index
+-s ... frameskip
+-ext_output ... gives class confidence left_x top_y width height (in absolutes)
+-gpus ... which gpus should be used 0,1,3 ... default 0
+
+---------------------------------
+calc_anchors
+    -show ... 
+    -width ... target width
+    -height ... target height 
+    -num_of_clusters ... 
+---------------------------------
+train
+    -show_imgs ... shwo images
+    -map ... calc mean average precisoion
+    -clear ... 
+---------------------------------
+test
+    -save_labels ... saves labels in same location as image file with same name but as .txt
+---------------------------------
+map
+    -points ... 

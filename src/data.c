@@ -343,7 +343,7 @@ void fill_truth_region(char *path, float *truth, int classes, int num_boxes, int
     free(boxes);
 }
 
-int fill_truth_detection(const char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy,
+void fill_truth_detection(const char *path, int num_boxes, float *truth, int classes, int flip, float dx, float dy, float sx, float sy,
     int net_w, int net_h)
 {
     char labelpath[4096];
@@ -352,7 +352,6 @@ int fill_truth_detection(const char *path, int num_boxes, float *truth, int clas
     int count = 0;
     int i;
     box_label *boxes = read_boxes(labelpath, &count);
-    int min_w_h = 0;
     float lowest_w = 1.F / net_w;
     float lowest_h = 1.F / net_h;
     randomize_boxes(boxes, count);
@@ -425,13 +424,8 @@ int fill_truth_detection(const char *path, int num_boxes, float *truth, int clas
         truth[(i-sub)*5+2] = w;
         truth[(i-sub)*5+3] = h;
         truth[(i-sub)*5+4] = id;
-
-        if (min_w_h == 0) min_w_h = w*net_w;
-        if (min_w_h > w*net_w) min_w_h = w*net_w;
-        if (min_w_h > h*net_h) min_w_h = h*net_h;
     }
     free(boxes);
-    return min_w_h;
 }
 
 
@@ -920,9 +914,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
             float dy = ((float)ptop / oh) / sy;
 
 
-            int min_w_h = fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
-
-            if (min_w_h < blur*4) blur = 0;   // disable blur if one of the objects is too small
+            fill_truth_detection(filename, boxes, truth, classes, flip, dx, dy, 1. / sx, 1. / sy, w, h);
 
             image ai = image_data_augmentation(src, w, h, pleft, ptop, swidth, sheight, flip, dhue, dsat, dexp,
                 blur, boxes, d.y.vals[i]);
@@ -959,9 +951,6 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int c, int bo
 
                 save_image(tmp_ai, buff);
                 if (show_imgs == 1) {
-                    //char buff_src[1000];
-                    //sprintf(buff_src, "src_%d_%d_%s_%d", random_index, i, basecfg((char*)filename), random_gen());
-                    //show_image_mat(src, buff_src);
                     show_image(tmp_ai, buff);
                     wait_until_press_key_cv();
                 }
