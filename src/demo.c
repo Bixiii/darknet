@@ -155,16 +155,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
         exit(0);
     }
 
-    FILE* json_file = NULL;
-    if (outfile) {
-        json_file = fopen(outfile, "wb");
-        char *tmp;
-        int now = time(NULL);
-        sprintf(tmp, "{\n \"Mediasource\":\"%s\",\n \"FPS\":\"%d\",\n \"Width\":%d,\n \"Height\":%d,\n \"Time\":\"%d-%02d-%02d %02d:%02d:%02d\",\n \"Frames\":[\n",
-                filename, 30, 416, 416, now/31556926+1970, (now%31556926)/2629743+1, (now%2629743)/86400+1, (now%86400)/3600, (now%3600)/60, now%60);
-        fwrite(tmp, sizeof(char),  strlen(tmp), json_file);
-    }
-
     flag_exit = 0;
 
     pthread_t fetch_thread;
@@ -187,6 +177,19 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     }
 
     int count = 0;
+    FILE* json_file = NULL;
+    if (outfile) {
+        int src_fps = get_stream_fps_cpp_cv(cap);
+        json_file = fopen(outfile, "wb");
+        int width = get_width_mat(det_img);
+        int height = get_height_mat(det_img);
+        char *tmp;
+        int now = time(NULL);
+        sprintf(tmp, "{\n \"Mediasource\":\"%s\",\n \"FPS\":\"%d\",\n \"Width\":%d,\n \"Height\":%d,\n \"Time\":\"%d-%02d-%02d %02d:%02d:%02d\",\n \"Frames\":[\n",
+                filename, src_fps, width, height, now/31556926+1970, (now%31556926)/2629743+1, (now%2629743)/86400+1, (now%86400)/3600+2, (now%3600)/60, now%60);
+        fwrite(tmp, sizeof(char),  strlen(tmp), json_file);
+    }
+
     if(!prefix && !dont_show){
         int full_screen = 0;
         create_window_cv("Demo", full_screen, 1352, 1013);

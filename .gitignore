@@ -55,6 +55,7 @@ include/darknet/
 uselib
 uselib_track
 darknet
+Makefile
 
 #weights
 **/weights
@@ -69,3 +70,7 @@ predictions.jpg
 CMakeCache.txt
 Makefile
 *.cmake
+Darknet.cbp
+
+#Logfiles
+*.log

@@ -37,6 +37,8 @@
 #include "upsample_layer.h"
 #include "parser.h"
 
+
+
 load_args get_base_args(network *net)
 {
     load_args args = { 0 };
@@ -796,7 +798,10 @@ char *detection_to_json(detection *dets, int nboxes, int classes, char **names, 
         sprintf(send_buf, "{\n \"frame_id\":%lld, \n \"filename\":\"%s\", \n \"objects\": [ \n", frame_id, filename);
     }
     else {
-        sprintf(send_buf, "{\n \"frame_id\":%lld, \n \"objects\": [ \n", frame_id);
+//        sprintf(send_buf, "{\n \"frame_id\":%lld, \n \"objects\": [ \n", frame_id);
+        int now = time(NULL);
+        sprintf(send_buf, "{\n \"frame_id\":%lld, \n \"timestamp\":\"%d-%02d-%02d %02d:%02d:%02d\",  \n \"objects\": [ \n",
+                frame_id,now/31556926+1970, (now%31556926)/2629743+1, (now%2629743)/86400+1, (now%86400)/3600+2, (now%3600)/60, now%60);
     }
 
     int i, j;
