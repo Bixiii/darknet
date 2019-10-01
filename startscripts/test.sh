@@ -1,5 +1,5 @@
 #!/bin/bash
-for i in {6000..18000..1000}
+for i in {19000..21000..1000}
 do
    echo "testing $i-weights"
    /home/birgit/ML/myDarknet/darknet detector map cfg/person.data cfg/yolo-person.cfg backup/yolo-person_${i}.weights > results/person_${i}_map.txt &
