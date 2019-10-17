@@ -132,6 +132,16 @@ char *find_char_arg(int argc, char **argv, char *arg, char *def)
     return def;
 }
 
+char** parse_filename(const char* filename){
+    char** filename_list = NULL;
+    char delim[] = ";";
+    char *ptr = strtok(filename, delim);
+    while(ptr != NULL){
+        ptr = strtok(NULL, delim);
+    }
+    return filename_list;
+}
+
 
 char *basecfg(char *cfgfile)
 {

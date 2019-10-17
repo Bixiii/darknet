@@ -65,7 +65,7 @@ extern "C" LIB_API int get_device_name(int gpu, char* deviceName);
 extern "C" LIB_API bool built_with_cuda();
 extern "C" LIB_API bool built_with_cudnn();
 extern "C" LIB_API bool built_with_opencv();
-extern "C" LIB_API void send_json_custom(char const* send_buf, int port, int timeout);
+extern "C" LIB_API void send_json_custom(char const *send_buf, int port, int timeout, int sourceID);
 
 class Detector {
     std::shared_ptr<void> detector_gpu_ptr;
@@ -220,7 +220,7 @@ public:
         //send_str +=  "\n ] \n}, \n";
         send_str += "\n ] \n}";
 
-        send_json_custom(send_str.c_str(), port, timeout);
+        send_json_custom(send_str.c_str(), port, timeout, 0);
         return true;
     }
 };

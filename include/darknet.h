@@ -49,6 +49,8 @@
 extern "C" {
 #endif
 
+#define MAXSTREAM 4
+
 struct network;
 typedef struct network network;
 
@@ -888,8 +890,8 @@ LIB_API metadata get_metadata(char *file);
 
 
 // http_stream.h
-LIB_API void delete_json_sender();
-LIB_API void send_json_custom(char const* send_buf, int port, int timeout);
+LIB_API void delete_json_sender(int sourceID);
+LIB_API void send_json_custom(char const *send_buf, int port, int timeout, int sourceID);
 LIB_API double get_time_point();
 void start_timer();
 void stop_timer();

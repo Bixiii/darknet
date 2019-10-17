@@ -1494,11 +1494,29 @@ void run_detector(int argc, char **argv)
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);
-        if (filename)
-            if (strlen(filename) > 0)
-                if (filename[strlen(filename) - 1] == 0x0d) filename[strlen(filename) - 1] = 0;
-        demo(cfg, weights, thresh, hier_thresh, cam_index, filename, names, classes, frame_skip, prefix, out_filename,
-             mjpeg_port, json_port, dont_show, ext_output, outfile, letter_box);
+        if (filename && strlen(filename) > 0)
+            if (filename[strlen(filename) - 1] == 0x0d) {filename[strlen(filename) - 1] = 0;}
+
+            char** filename_list = malloc(sizeof(char*)*MAXSTREAM);
+            char delim[] = ";";
+            char *ptr = strtok(filename, delim);
+            int sourceCount = 0;
+            while(ptr != NULL){
+//                printf("file: %s\n", ptr);
+                filename_list[sourceCount] = ptr;
+                sourceCount++;
+                ptr = strtok(NULL, delim);
+            }
+
+        filename_list[0] = "udpsrc port=5000 caps=\"application/x-rtp,media=(string)video,clock-rate=90000,encoding-name=(string)H264,payload=96\" ! rtpjitterbuffer latency=1000 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink";
+        filename_list[1] = "udpsrc port=7000 caps=\"application/x-rtp,media=(string)video,clock-rate=90000,encoding-name=(string)H264,payload=96\" ! rtpjitterbuffer latency=1000 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink";
+//        filename_list[0] = "rtsp://test:test1234@192.168.25.11:554/stream0/mobotix.mjpeg";
+//        filename_list[1] = "/home/birgit/Downloads/source0.avi";
+//        filename_list[2] = "/home/birgit/Downloads/source1.avi";
+//        filename_list[3] = "/home/birgit/Downloads/source3.avi";
+
+        demo(cfg, weights, thresh, hier_thresh, cam_index, filename_list, 2, classes, frame_skip, prefix, out_filename,
+             mjpeg_port, json_port, dont_show, ext_output, outfile, letter_box, names);
 
         free_list_contents_kvp(options);
         free_list(options);

@@ -627,6 +627,12 @@ int get_stream_fps_cpp_cv(cap_cv *cap)
 #else                        // OpenCV 2.x
         fps = cpp_cap.get(CV_CAP_PROP_FPS);
 #endif
+        // sanity check because ip-cam sometimes sends wrong value like 0 or 9000
+        if(fps < 1 || fps > 300){
+
+            fps = 25;
+            std::cout << "Can't get FPS of source stream. For output video FPS = 25 by default. \n";
+        }
     }
     catch (...) {
         cerr << " Can't get FPS of source videofile. For output video FPS = 25 by default. \n";
@@ -1113,7 +1119,7 @@ void draw_train_loss(mat_cv* img_src, int img_size, float avg_loss, float max_im
         else
             cv::putText(img, "- Saved", cv::Point(260, img_size - 10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.7, CV_RGB(255, 255, 255), 1, CV_AA);
 
-        if (mjpeg_port > 0) send_mjpeg((mat_cv *)&img, mjpeg_port, 500000, 100);
+        if (mjpeg_port > 0) send_mjpeg((mat_cv *) &img, mjpeg_port, 500000, 100, 0);
     }
     catch (...) {
         cerr << "OpenCV exception: draw_train_loss() \n";

@@ -351,8 +351,8 @@ void run_yolo(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
     else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo"))
-        demo(cfg, weights, thresh, hier_thresh, cam_index, filename, voc_names, 20,
+        demo(cfg, weights, thresh, hier_thresh, cam_index, filename, 0, 20,
              frame_skip,
              prefix, out_filename, mjpeg_port, json_port, dont_show, ext_output, NULL,
-             0);
+             0, voc_names);
 }

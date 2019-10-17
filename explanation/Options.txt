@@ -43,3 +43,8 @@ test
 ---------------------------------
 map
     -points ... 
+
+--------------------------------
+--------------------------------
+shwo only specific objects: 
+write dont_show in front of object (in .names file) that should be omitted

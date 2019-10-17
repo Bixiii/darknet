@@ -66,6 +66,7 @@ int find_int_arg(int argc, char **argv, char *arg, int def);
 float find_float_arg(int argc, char **argv, char *arg, float def);
 int find_arg(int argc, char* argv[], char *arg);
 char *find_char_arg(int argc, char **argv, char *arg, char *def);
+char** parse_filename(const char* filename);
 int sample_array(float *a, int n);
 int sample_array_custom(float *a, int n);
 void print_statistics(float *a, int n);

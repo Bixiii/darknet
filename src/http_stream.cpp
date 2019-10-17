@@ -65,6 +65,7 @@ static int close_socket(SOCKET s) {
 #define ADDRPOINTER  unsigned int*
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR   -1
+
 struct _IGNORE_PIPE_SIGNAL
 {
     struct sigaction new_actn, old_actn;
@@ -262,34 +263,34 @@ public:
 };
 // ----------------------------------------
 
-static std::unique_ptr<JSON_sender> js_ptr;
+static std::unique_ptr<JSON_sender> js_ptr[MAXSTREAM];
 static std::mutex mtx;
 
-void delete_json_sender()
+void delete_json_sender(int sourceID)
 {
     std::lock_guard<std::mutex> lock(mtx);
-    js_ptr.release();
+    js_ptr[sourceID].release();
 }
 
-void send_json_custom(char const* send_buf, int port, int timeout)
+void send_json_custom(char const *send_buf, int port, int timeout, int sourceID)
 {
     try {
         std::lock_guard<std::mutex> lock(mtx);
-        if(!js_ptr) js_ptr.reset(new JSON_sender(port, timeout));
-
-        js_ptr->write(send_buf);
+        if(!js_ptr[sourceID]) js_ptr[sourceID].reset(new JSON_sender(port, timeout));
+        js_ptr[sourceID]->write(send_buf);
     }
     catch (...) {
         cerr << " Error in send_json_custom() function \n";
     }
 }
 
-void send_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, int port, int timeout)
+void send_json(detection *dets, int nboxes, int classes, char **names, long long int frame_id, int port, int timeout,
+               int sourceID)
 {
     try {
         char *send_buf = detection_to_json(dets, nboxes, classes, names, frame_id, NULL);
 
-        send_json_custom(send_buf, port, timeout);
+        send_json_custom(send_buf, port, timeout, sourceID);
 //        std::cout << " JSON-stream sent. \n";
 
         free(send_buf);
@@ -490,17 +491,19 @@ public:
 // ----------------------------------------
 
 static std::mutex mtx_mjpeg;
+static std::unique_ptr<MJPG_sender> mjpg_ptr[MAXSTREAM] = {NULL};
 
 struct mat_cv : cv::Mat { int a[0]; };
 
-void send_mjpeg(mat_cv* mat, int port, int timeout, int quality)
+void send_mjpeg(mat_cv *mat, int port, int timeout, int quality, int sourceID)
 {
     try {
         std::lock_guard<std::mutex> lock(mtx_mjpeg);
-        static MJPG_sender wri(port, timeout, quality);
+        if(!mjpg_ptr[sourceID]) mjpg_ptr[sourceID].reset(new MJPG_sender(port, timeout, quality));
+        mjpg_ptr[sourceID]->write(*mat);
+
         //cv::Mat mat = cv::cvarrToMat(ipl);
-        wri.write(*mat);
-        std::cout << " MJPEG-stream sent. \n";
+        //std::cout << " MJPEG-stream sent. \n";
     }
     catch (...) {
         cerr << " Error in send_mjpeg() function \n";
