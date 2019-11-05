@@ -1508,14 +1508,16 @@ void run_detector(int argc, char **argv)
                 ptr = strtok(NULL, delim);
             }
 
-        filename_list[0] = "udpsrc port=5000 caps=\"application/x-rtp,media=(string)video,clock-rate=90000,encoding-name=(string)H264,payload=96\" ! rtpjitterbuffer latency=1000 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink";
-        filename_list[1] = "udpsrc port=7000 caps=\"application/x-rtp,media=(string)video,clock-rate=90000,encoding-name=(string)H264,payload=96\" ! rtpjitterbuffer latency=1000 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink";
-//        filename_list[0] = "rtsp://test:test1234@192.168.25.11:554/stream0/mobotix.mjpeg";
-//        filename_list[1] = "/home/birgit/Downloads/source0.avi";
+
+        filename_list[0] = filename;
+//        filename_list[0] = "/home/birgit/Datasets/LIRIS/test/vid0006.avi";
+//        filename_list[0] = "udpsrc port=5000 caps=\"application/x-rtp,media=(string)video,clock-rate=90000,encoding-name=(string)H264,payload=96\" ! rtpjitterbuffer latency=1000 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink";
+//        filename_list[1] = "udpsrc port=7000 caps=\"application/x-rtp,media=(string)video,clock-rate=90000,encoding-name=(string)H264,payload=96\" ! rtpjitterbuffer latency=1000 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink";
+//        filename_list[0] = "rtsp://test:test1234@192.168.25.11:554/stream0/mobotix.mjpeg";//        filename_list[1] = "/home/birgit/Downloads/source0.avi";
 //        filename_list[2] = "/home/birgit/Downloads/source1.avi";
 //        filename_list[3] = "/home/birgit/Downloads/source3.avi";
 
-        demo(cfg, weights, thresh, hier_thresh, cam_index, filename_list, 2, classes, frame_skip, prefix, out_filename,
+        demo(cfg, weights, thresh, hier_thresh, cam_index, filename_list, 1, classes, frame_skip, prefix, out_filename,
              mjpeg_port, json_port, dont_show, ext_output, outfile, letter_box, names);
 
         free_list_contents_kvp(options);

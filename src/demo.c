@@ -15,7 +15,7 @@
 #endif
 
 #ifdef OPENCV
-#define AVGWINDOWFPS
+#define AVGWINDOWFPS 25
 
 #include "http_stream.h"
 
@@ -34,7 +34,8 @@ static image det_s[MAXSTREAM];
 
 static cap_cv *cap[MAXSTREAM];
 static float fps = 0;
-static float avg_fps[AVGWINDOWFPS] = {0};
+static float current_fps[AVGWINDOWFPS] = {0};
+static float avg_fps = 0;
 static float demo_thresh = 0;
 static int demo_ext_output = 0;
 static long long int frame_id = 0;
@@ -68,7 +69,7 @@ void *fetch_in_thread(void *ptr)
     if(!in_s[i].data){
         printf("Stream closed.\n");
         flag_exit = 1;
-        //exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
         return 0;
     }
 
@@ -156,6 +157,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             printf("Check that you have copied file opencv_ffmpeg340_64.dll to the same directory where is darknet.exe \n");
 #endif
             error("Couldn't connect to webcam.\n");
+            exit(0);
         }
     }
 
@@ -227,7 +229,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
             int src_fps = 25;
             src_fps = get_stream_fps_cpp_cv(cap[i]);
             char buff[2048];
-            sprintf(buff,"%s/source%d.avi", out_filename, i);
+            sprintf(buff,"%s%d.avi", out_filename, i);
             output_video_writer[i] =
                     create_video_writer(buff, 'D', 'I', 'V', 'X', src_fps, get_width_mat(det_img[i]), get_height_mat(det_img[i]), 1);
 
@@ -248,7 +250,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
 
     double before = get_wall_time();
     double before_avg = get_wall_time();
-    int avg_window = 0;
 
     while(1){
         ++count;
@@ -337,16 +338,20 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
                 resultboxes[i] = nboxes[i];
                 results[i] = dets[i];
             }
-            avg_fps[0] += fps;
+            current_fps[frame_id%AVGWINDOWFPS] = fps;
+            avg_fps = 0;
+            if(frame_id > AVGWINDOWFPS){
+                for(int i=0; i<AVGWINDOWFPS; i++){
+                    avg_fps = avg_fps + current_fps[i];
+                }
+                avg_fps = avg_fps/AVGWINDOWFPS;
+            }
 
             if (flag_exit == 1) break;
         }
 
         // measure time and calcualte fps
-        avg_window++;
-        if(avg_window == 25) {avg_window = 0;}
         double after = get_time_point();    // more accurate time measurements
-        double after_avg = get_time_point();
         float curr = 1000000. / (after - before);
         fps = curr;
         before = after;
@@ -366,7 +371,6 @@ void demo(char *cfgfile, char *weightfile, float thresh, float hier_thresh, int 
     }
 
 
-    printf("avg_fps: %f", (avg_fps[0]/frame_id));
     // free memory
     for (int i=0; i<resourceCount; i++){
         release_mat(&show_img[i]);

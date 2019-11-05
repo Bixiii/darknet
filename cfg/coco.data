@@ -1,9 +1,9 @@
 classes= 80
-train  = /home/pjreddie/data/coco/trainvalno5k.txt
-valid = /home/birgit/Datasets/COCO/coco/test.txt
+#train  = /home/pjreddie/data/coco/trainvalno5k.txt
+#valid = /home/birgit/Datasets/COCO/coco/test.txt
 #valid  = coco_testdev
 #valid = data/coco_val_5k.list
-names = cfg/coco.names
-backup = /home/pjreddie/backup/
-eval=coco
+names = /home/birgit/ML/myDarknet/cfg/coco.names
+#backup = /home/pjreddie/backup/
+#eval=coco
 

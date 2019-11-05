@@ -18,6 +18,7 @@
 #include <opencv2/opencv_modules.hpp>
 
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/highgui/highgui_c.h>
 #include <opencv2/video/video.hpp>
 
 // includes for OpenCV >= 3.x
@@ -562,9 +563,14 @@ cap_cv* get_capture_video_stream(const char *path) {
     cv::VideoCapture* cap = NULL;
     try {
         cap = new cv::VideoCapture(path);
+        if( !cap->isOpened()){
+            cerr << " OpenCV exception: video-stream " << path << " can't be opened! \n";
+            exit(0);
+        }
     }
     catch (...) {
         cerr << " OpenCV exception: video-stream " << path << " can't be opened! \n";
+        exit(0);
     }
     return (cap_cv*)cap;
 }

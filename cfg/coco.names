@@ -1,80 +1,80 @@
 person
-bicycle
+dont_show bicycle
 car
-motorbike
-aeroplane
-bus
-train
+dont_show motorbike
+dont_show aeroplane
+dont_show bus
+dont_show train
 truck
-boat
-traffic light
-fire hydrant
-stop sign
-parking meter
-bench
-bird
+dont_show boat
+dont_show traffic light
+dont_show fire hydrant
+dont_show stop sign
+dont_show parking meter
+dont_show bench
+dont_show bird
 cat
 dog
-horse
-sheep
-cow
-elephant
-bear
-zebra
-giraffe
+dont_show horse
+dont_show sheep
+dont_show cow
+dont_show elephant
+dont_show bear
+dont_show zebra
+dont_show giraffe
 backpack
 umbrella
 handbag
-tie
+dont_show tie
 suitcase
-frisbee
-skis
-snowboard
-sports ball
-kite
-baseball bat
-baseball glove
-skateboard
-surfboard
-tennis racket
+dont_show frisbee
+dont_show skis
+dont_show snowboard
+dont_show sports ball
+dont_show kite
+dont_show baseball bat
+dont_show baseball glove
+dont_show skateboard
+dont_show surfboard
+dont_show tennis racket
 bottle
 wine glass
 cup
-fork
-knife
-spoon
-bowl
+dont_show fork
+dont_show knife
+dont_show spoon
+dont_show bowl
 banana
 apple
-sandwich
-orange
-broccoli
-carrot
-hot dog
-pizza
-donut
-cake
+dont_show sandwich
+dont_show orange
+dont_show broccoli
+dont_show carrot
+dont_show hot dog
+dont_show pizza
+dont_show donut
+dont_show cake
 chair
 sofa
 pottedplant
-bed
-diningtable
-toilet
+dont_show bed
+dont_show diningtable
+dont_show toilet
 tvmonitor
 laptop
-mouse
+dont_show mouse
 remote
-keyboard
+dont_show keyboard
 cell phone
-microwave
-oven
-toaster
-sink
-refrigerator
+dont_show microwave
+dont_show oven
+dont_show toaster
+dont_show sink
+dont_show refrigerator
 book
 clock
 vase
-scissors
-teddy bear
-hair drier
-toothbrush
+dont_show scissors
+dont_show teddy bear
+dont_show hair drier
+dont_show toothbrush
